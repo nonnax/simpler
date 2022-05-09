@@ -22,7 +22,12 @@ class TestApp < Test::Unit::TestCase
 
   def test_json
     get '/greet'
-    pp last_response
+    assert_equal last_response.status, 200
+  end
+
+  def test_slug_json
+    get '/hi/slug'
+    p last_response.body
     assert_equal last_response.status, 200
   end
 

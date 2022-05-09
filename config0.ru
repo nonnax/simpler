@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Id$ nonnax 2022-05-09 01:44:48 +0800
-require_relative 'lib/simpler'
+require_relative 'lib/evensimpler'
 require 'json'
 
 use Rack::Session::Cookie, secret: SecureRandom.hex(64)
@@ -24,11 +24,8 @@ Simpler.new do
     res.write data.to_json
   end
 
-  get '/hi/:name', surname:'even' do |name, surname|
-    res.headers['Content-type']='application/json'
-    data = {message: 'hello, '+String(name)+String(surname)}
-    session[:name]=name
-    res.write data.to_json
+  get '/hi/:slug', surname:'evensimpler' do |name, surname|
+    res.write "welcome slugs & params! #{[name, surname]}"
   end
 
   get '/r' do

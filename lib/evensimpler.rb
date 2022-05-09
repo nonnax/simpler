@@ -2,36 +2,41 @@
 # Id$ nonnax 2022-05-09 01:37:27 +0800
 class Simpler
   class DummyFix<Rack::Response; end
-  H=Hash.new{|h,k|h[k]=k.transform_keys(&:to_sym)}
-  
   %i(get post).each do |m|
-      define_method( m ){|path, **params, &block|
-        block.call(*@captures) if match?(path, m, **params)
-      }
+    define_method( m ){|path, **opts, &block|
+      block.call(*@captures) if match?(path, m){|slugs| @captures=(slugs+param_values(**opts)).compact}
+    }
   end
 
-  def match?(u, m, **params)
-    return nil unless req.request_method.downcase==m.to_s
-    
+  def param_values(**opts)
+    opts
+    .merge(req.params.transform_keys(&:to_sym))
+    .values
+  end
+
+  def match?(path, m, &block)
     pattern=->(u){
       u.gsub(/:\w+/) { '([^/?#]+)' }
        .then { |s| %r{^#{s}/?$} }
     }
   
-    req.path_info.match(pattern[u])
-       .tap { |md|
-          @captures=(Array(md&.captures)+params.merge(H[req.params]).values).compact
-       }
+    [
+      md=req.path_info.match(pattern[path]), 
+      req.request_method.downcase==m.to_s
+    ]
+    .all?
+    .tap{|x| yield Array(md&.captures) if x}
   end
 
   attr :res, :req, :env
   def initialize(&block)
     @block=block
+    @captures=[]
   end
 
   def call(env)
     @req=Rack::Request.new(env)
-    @res=Rack::Response.new nil, 200
+    @res=Rack::Response.new(nil, 200)
     @env=env
     instance_eval(&@block)
     default{ res.write 'Not Found' }
