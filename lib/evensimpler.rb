@@ -2,9 +2,11 @@
 # Id$ nonnax 2022-05-09 01:37:27 +0800
 class Simpler
   class DummyFix<Rack::Response; end
+  
   %i(get post).each do |m|
     define_method( m ){|path, **opts, &block|
-      block.call(*@captures) if match?(path, m){|slugs| @captures=(slugs+param_values(**opts)).compact}
+      match?(path, m){|slugs| @captures=(slugs+param_values(**opts)).compact }
+      .then{|x| block.call(*@captures) if x}
     }
   end
 
@@ -15,17 +17,16 @@ class Simpler
   end
 
   def match?(path, m, &block)
-    pattern=->(u){
-      u.gsub(/:\w+/) { '([^/?#]+)' }
-       .then { |s| %r{^#{s}/?$} }
-    }
-  
     [
-      md=req.path_info.match(pattern[path]), 
+      md=req.path_info.match(pattern path), 
       req.request_method.downcase==m.to_s
     ]
     .all?
     .tap{|x| yield Array(md&.captures) if x}
+  end
+
+  def pattern u
+    u.gsub(/:\w+/,'([^/?#]+)').then{ |s| %r{^#{s}/?$} }
   end
 
   attr :res, :req, :env

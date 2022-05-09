@@ -10,18 +10,17 @@ class Simpler
       }
   end
 
-  def match?(u, m, **params)
-    return nil unless req.request_method.downcase==m.to_s
-    
-    pattern=->(u){
-      u.gsub(/:\w+/) { '([^/?#]+)' }
-       .then { |s| %r{^#{s}/?$} }
+  def match?(u, m, **params, &block)
+    [req.request_method.downcase==m.to_s, 
+    md=req.path_info.match(pattern u)]
+    .all?
+    .tap { |x|
+      yield @captures=(Array(md&.captures)+params.merge(H[req.params]).values).compact if x && block
     }
-  
-    req.path_info.match(pattern[u])
-       .tap { |md|
-          @captures=(Array(md&.captures)+params.merge(H[req.params]).values).compact
-       }
+  end
+
+  def pattern u
+    u.gsub(/:\w+/, '([^/?#]+)').then { |s| %r{^#{s}/?$} }
   end
 
   attr :res, :req, :env
